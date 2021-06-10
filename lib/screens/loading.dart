@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:weather_app/data/my_location.dart';
+import 'package:weather_app/data/network.dart';
+import 'package:weather_app/screens/weather_screen.dart';
+
+//open weather api 키값
+const apikey = '1ec88249aa4fb6a72f1cbbd85e855a88';
 
 class Loading extends StatefulWidget {
   @override
@@ -9,40 +12,49 @@ class Loading extends StatefulWidget {
 }
 
 class _LoadingState extends State<Loading> {
+  late double latitude3;
+  late double longitude3;
+
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     getLocation();
-    fetchData();
-  }
-
-  void fetchData() async{
-    http.Response response = await http.get(Uri.parse(
-        "https://samples.openweathermap.org/data/2.5/weather?q=London&appid=b1b15e88fa797225412429c1c50c122a1"));
-    if(response.statusCode == 200){
-      String jsonData = response.body;
-      var myJson = jsonDecode(jsonData)['weather'][0]['description'];
-      print(myJson);
-      var wind = jsonDecode(jsonData)['wind']['speed'];
-      var id = jsonDecode(jsonData)['id'];
-      print(wind);
-      print(id);
-
-    }
-    print(response.body);
+    // fetchData();
   }
 
   void getLocation() async {
-    //현재 나의 위치를 알아내는 플러그인
-    try {
-      Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high);
-      print(position);
-    } catch (e) {
-      print('There was a problem with the internet connection');
-    }
+    MyLocation myLocation = MyLocation();
+    await myLocation.getMyCurrentLocation();
+    latitude3 = myLocation.latitude2;
+    longitude3 = myLocation.longitude2;
+    print(latitude3);
+    print(longitude3);
+
+    Network network = Network(
+        'https://api.openweathermap.org/data/2.5/weather?lat=$latitude3&lon=$longitude3&appid=$apikey&units=metric');
+
+    var weatherData = await network.getJsonData();
+    print(weatherData);
+    Navigator.push(context, MaterialPageRoute(builder: (context) {
+      return WeatherScreen(parseWeatherData: weatherData,);
+    }));
   }
+
+  //
+  // void fetchData() async {
+  //
+  //     var myJson = parsingData['weather'][0]['description'];
+  //     print(myJson);
+  //     var wind = parsingData['wind']['speed'];
+  //     var id = parsingData['id'];
+  //     print(wind);
+  //     print(id);
+  //   }else{
+  //     print(response.statusCode);
+  //   }
+  //   print(response.body);
+  // }
 
   @override
   Widget build(BuildContext context) {
